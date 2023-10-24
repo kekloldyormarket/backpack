@@ -57,10 +57,48 @@ export const ProxyImage = React.memo(function ProxyImage({
       }
     }, 2000);
   }, []);
+  function htmlDecode(input){
+    var doc = new DOMParser().parseFromString(input, "text/html");
+    return doc.documentElement;
 
+  }
+
+
+ 
+function TweetEmbed({ tweetUrl }) {
+  const iframeRef = useRef(null);
+  const tweetId = new URL(tweetUrl).pathname.split("/").pop()?.replace("?ref_src=twsrc%5Etfw","")
+
+  useEffect(() => {
+    // Create an iframe element
+    const iframe = document.createElement("iframe");
+
+    // Set the source of the iframe to the Twitter API embed URL with the tweet ID as a parameter
+    iframe.src = `https://platform.twitter.com/embed/Tweet.html?dnt=true&embedId=twitter-widget-0&features=eyJ0ZndfZXhwZXJpbWVudHNfY29va2llX2V4cGlyYXRpb24iOnsiYnVja2V0IjoxMjA5NjAwLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X2hvcml6b25fdHdlZXRfZW1iZWRfOTU1NSI6eyJidWNrZXQiOiJodGUiLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3R3ZWV0X2VtYmVkX2NsaWNrYWJpbGl0eV8xMjEwMiI6eyJidWNrZXQiOiJjb250cm9sLXRyYW5zZmVyLWFuYWx5dGljcyIsInNob3dfYXJlMiOiJjb250cm9sIiwic291cmNlcyI6WyJ0ZXJtcyJdfX0%3D&frame=false&hideCard=false&hideThread=false&id=${tweetId}`;
+
+    // Set the width and height of the iframe
+    iframe.width = "100%";
+    iframe.height = "100%";
+
+    // Append the iframe to the div element if it exists
+    if (iframeRef.current) {
+      // @ts-ignore
+      iframeRef.current.appendChild(iframe);
+    }
+  }, [tweetId]);
+
+  return <div ref={iframeRef}></div>;
+}
   return (
+    
     <>
-      {imgProps.src && !noSkeleton ? (
+      <div>
+      {imgProps.src && imgProps.src.includes("twitter.com") ? (
+        <TweetEmbed tweetUrl={imgProps.src} />
+      ) : null}
+      
+       
+      {imgProps.src && ! imgProps.src.includes("twitter.com") && !noSkeleton ? (
         <Skeleton
           style={{
             height: "100%",
@@ -74,44 +112,46 @@ export const ProxyImage = React.memo(function ProxyImage({
           className={imgProps.className}
         />
       ) : null}
-      {imgProps.src ? (
-        <img
-          loading="lazy"
-          ref={imageRef}
-          {...imgProps}
-          style={{
-            ...(imgProps.style ?? {}),
-            ...visuallyHidden,
-          }}
-          alt=""
-          onLoad={(...e) => {
-            const image = e[0].target as HTMLImageElement;
-            if (placeholderRef.current) {
-              placeholderRef.current.style.display = "none";
-            }
-            image.style.position = imgProps?.style?.position ?? "inherit";
-            /// @ts-ignore
-            image.style.top = imgProps?.style?.top ?? "inherit";
-            image.style.visibility = "visible";
-          }}
-          onError={(...e) => {
-            setErrCount((count) => {
-              if (count >= 1) {
-                if (removeOnError && placeholderRef.current) {
-                  placeholderRef.current.style.display = "none";
-                }
-              } else {
-                if (imageRef.current) imageRef.current.src = imgProps.src ?? "";
+      {imgProps.src && !imgProps.src.includes("https://twitter.com") ? (
+          <img
+            loading="lazy"
+            ref={imageRef}
+            {...imgProps}
+            style={{
+              ...(imgProps.style ?? {}),
+              ...visuallyHidden,
+            }}
+            alt=""
+            onLoad={(...e) => {
+              const image = e[0].target as HTMLImageElement;
+              if (placeholderRef.current) {
+                placeholderRef.current.style.display = "none";
               }
-              return count + 1;
-            });
-          }}
-          src={
-            original
-              ? externalResourceUri(imgProps.src, { cached: true })
-              : proxyImageUrl(imgProps.src ?? "", size)
-          }
-        />
+              image.style.position = imgProps?.style?.position ?? "inherit";
+              /// @ts-ignore
+              image.style.top = imgProps?.style?.top ?? "inherit";
+              image.style.visibility = "visible";
+            }}
+            onError={(...e) => {
+              setErrCount((count) => {
+                if (count >= 1) {
+                  if (removeOnError && placeholderRef.current) {
+                    placeholderRef.current.style.display = "none";
+                  }
+                } else {
+                  if (imageRef.current)
+                    imageRef.current.src = imgProps.src ?? "";
+                }
+                return count + 1;
+              });
+            }}
+            src={
+              original
+                ? externalResourceUri(imgProps.src, { cached: true })
+                : proxyImageUrl(imgProps.src ?? "", size)
+            }
+          />
+        
       ) : !noSkeleton ? (
         <Skeleton
           style={{
@@ -124,7 +164,10 @@ export const ProxyImage = React.memo(function ProxyImage({
           }}
           className={imgProps.className}
         />
-      ) : null}
+      ) : null} </div>
     </>
   );
 });
+
+
+
